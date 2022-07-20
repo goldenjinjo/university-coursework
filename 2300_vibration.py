@@ -87,30 +87,34 @@ def Free_Vibration(x0, xdot0, omega_n, dampRatio):
     eqn: The Equation of Motion using SymPy
 
     """
-    omega_d = omega_n*np.sqrt(1 - dampRatio**2)
-   
-     
-   
+    
    # underdamped
     # NOTE: the case of undamped is inclusive
     if dampRatio < 1:
+        
+        omega_d = omega_n*np.sqrt(1 - dampRatio**2)
+        
+        
         A = np.sqrt(x0**2 + (dampRatio*omega_n*x0 + xdot0)**2 / omega_d**2 )
         phi = -math.atan((dampRatio*omega_n*x0 + xdot0) / (omega_d*x0) )
         if x0 < 0:
             phi += np.pi
         
-        eqn = sig(A,accuracy) * exp(sig(-dampRatio*omega_n,accuracy)*t) * cos(sig(omega_d,accuracy)*t + sig(phi,accuracy) )
+        A = sig(A, accuracy)
+        phi = sig(phi, accuracy)
+        
+        eqn = A * exp(sig(-dampRatio*omega_n,accuracy)*t) * cos(sig(omega_d,accuracy)*t + phi )
         
         
         return A, phi, eqn
     
     # critically damped
     elif sig(dampRatio, 3) == 1:
-        A1 = x0
-        A2 = xdot0 + omega_n*x0
+        A1 = sig(x0, accuracy)
+        A2 = sig(xdot0 + omega_n*x0, accuracy)
         
-        #eqn = 
-        return A1, A2
+        eqn = (A1 + A2*t)*exp(-sig(dampRatio,accuracy)*sig(omega_n, accuracy)*t)
+        return A1, A2, eqn
     
     # overdamped
     elif sig(dampRatio, accuracy) > 1:
@@ -118,15 +122,21 @@ def Free_Vibration(x0, xdot0, omega_n, dampRatio):
         A_den = 2*omega_n*np.sqrt(dampRatio**2 - 1)
         
         #numerator for A1
-        A1_num = (xdot0 + omega_n*x0(dampRatio + np.sqrt(dampRatio**2 - 1)))
-        A1 = A1_num / A_den
+        A1_num = (xdot0 + omega_n*x0*(dampRatio + np.sqrt(dampRatio**2 - 1)))
+        A1 = sig(A1_num / A_den, accuracy)
         
         #numerator for A2
-        A2_num = (xdot0 + omega_n*x0(dampRatio - np.sqrt(dampRatio**2 - 1)))
-        A2 = A2_num / A_den
+        A2_num = (xdot0 + omega_n*x0*(dampRatio - np.sqrt(dampRatio**2 - 1)))
+        A2 = sig(A2_num / A_den, accuracy)
         
+        exponent1 = (-dampRatio + np.sqrt(dampRatio**2 - 1) ) * omega_n
+        exponent1 = sig(exponent1, accuracy)
+        exponent2 = (-dampRatio - np.sqrt(dampRatio**2 - 1) ) * omega_n
+        exponent2 = sig(exponent2, accuracy)
         
-        return A1, A2
+        eqn = A1*exp(exponent1*t) + A2*exp(exponent2*t)
+        
+        return A1, A2, eqn
 
 
 # symbol testing
@@ -227,21 +237,45 @@ k_star = 27700 #N/m #kg*m/s^2
 
 x0 = 0.000001 # m
 xdot0 = 2 # m/s
-time = 1.6 #s
+time = 0.3 #s
 
 omegaN = Omega_N(k_star, m_star)
 dampRatio = Damp_Ratio(c_star, m_star, omegaN)
+dampRatio = 0
 
-initialCond = Free_Vibration(x0, xdot0, omegaN, dampRatio)
-A = initialCond[0]
-phi = initialCond[1]
-eqn = initialCond[2].subs(t, time)
 
 
 print("Omega_N: ", sig(omegaN, accuracy), "rad/s")
 print("Damping Ratio: ", sig(100*dampRatio, accuracy),"%")
-print("Free Vibration Amplitude: ", sig(A, accuracy), "m")
-print("Free Vibration Phase Factor: ", sig(phi, accuracy), "rad")
+
+
+
+initialCond = Free_Vibration(x0, xdot0, omegaN, dampRatio)
+
+if dampRatio < 1:
+    
+    A = initialCond[0]
+    phi = initialCond[1]
+    if sig(dampRatio, accuracy) == 0:
+        print("System is Undamped")
+    else:
+        print("System is Underdamped")
+    print("Free Vibration Amplitude: ", A, "m")
+    print("Free Vibration Phase Factor: ", phi, "rad")
+else:
+    A1 = initialCond[0]
+    A2 = initialCond[1]
+    if sig(dampRatio, accuracy) == 1:
+        print("System is critically damped")
+    else:
+        print("System is overdamped")
+    print("Free Vibration Amplitude 1: ", A1, "m")
+    print("Free Vibration Amplitude 2: ", A2, "rad")
+    
+eqn = initialCond[2].subs(t, time)
+
+
+
 print("Free Vibration Equation: ", initialCond[2])
 print("Position at t =",time,"s: ",sig(eqn,accuracy), "m")
 
