@@ -20,6 +20,7 @@ g=9.81 #m/s^2
 
 # defining symbols, do not change
 t = symbols('t')
+omega = symbols('w')
 
 ### FUNCTIONS
 
@@ -148,7 +149,7 @@ def Free_Vibration(x0, xdot0, omega_n, dampRatio):
 
 
 ### FORCED VIBRATION ###
-def Forced_Vibration(F0, phi0, k, omega_n, dampRatio, omega):
+def Forced_Vibration(F0, phi0, k, omegaN, dampRatio, omegaSub):
     """
     Solution for forced vibration motion
     Works for either translation or rotation
@@ -169,13 +170,15 @@ def Forced_Vibration(F0, phi0, k, omega_n, dampRatio, omega):
     Steady state amplitude
 
     """
-    omegaRatio = omega / omega_n
+    omegaRatio = omegaSub / omegaN
     
     X = (F0 / k) / np.sqrt((1 - omegaRatio**2 )**2 + (2*dampRatio * omegaRatio)**2 )
-    
+    X = sig(X, accuracy)
     phi = phi0 - math.atan((2*dampRatio*omegaRatio) / (1 - omegaRatio**2 ) )
+    phi = sig(phi, accuracy)
     
-    return X, phi
+    eqn = X*cos(omega*t + phi)
+    return X, phi, eqn
 
 
 ### SYSTEM IDENTIFICATION
@@ -220,7 +223,7 @@ L = 2
 c = 20
 k = 100
 F_0 = 10 #N
-omega = 2 #rad/s
+omegaSub = 2 #rad/s
 
 N = 5
 x1 = 0.1
@@ -284,6 +287,6 @@ print("Position at t =",time,"s: ",sig(eqn,accuracy), "m")
 M_0 = F_0*(L - L/4)
 phi0 = 0
 
-steadyState = Forced_Vibration(M_0, phi0, k_star, omegaN, dampRatio, omega)
+steadyState = Forced_Vibration(M_0, phi0, k_star, omegaN, dampRatio, omegaSub)
 
     
