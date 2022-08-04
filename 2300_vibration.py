@@ -140,7 +140,7 @@ def Free_Vibration(x0, xdot0, omega_n, dampRatio):
         return A1, A2, eqn
 
 
-# symbol testing
+
 
 
 
@@ -225,10 +225,11 @@ k = 100
 F_0 = 10 #N
 omegaSub = 2 #rad/s
 
-N = 5
-x1 = 0.1
-x2 = 0.4
-
+N = 19
+x1 = 8.42879
+x2 = 1.40519
+t1 = 1.56667
+t2 = 115.867
 
 delta = Log_Decrement(N, x1, x2)
 dampRatioIdent = delta / np.sqrt(4*np.pi**2 + delta**2)
