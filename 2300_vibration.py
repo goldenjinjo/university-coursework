@@ -8,7 +8,7 @@ Calculator for Vibrations in Course Content Part B of MMAN2300
 
 import numpy as np
 import math
-from sympy import symbols, cos, sin, N, exp
+from sympy import symbols, cos, sin, N, exp, solve, simplify
 from sig import sig
 
 
@@ -214,6 +214,65 @@ def Log_Decrement(N, x1, x2):
     
     return 1/N * np.log(x1 / x2)
 
+
+# other
+def Force_Amplitude(X, k, dampRatio, omegaN, omegaSub):
+    
+    omegaRatio = omegaSub / omegaN
+    
+    F0 = X * k * np.sqrt( (1 - omegaRatio**2)**2 + (2*dampRatio*omegaRatio)**2 )
+    
+    return F0
+
+### 2 DEGREES OF FREEDOM ###
+
+def OMEGA_2DOF(K_STAR, M_STAR):
+    
+    matrix = K_STAR - omega**2 * M_STAR
+    
+    det = simplify(matrix[0][0]*matrix[1][1] - matrix[0][1]*matrix[1][0])
+    
+    omega_matrix = solve(det, omega)
+    
+    omega1 = sig( abs(omega_matrix[0]), accuracy)
+    omega2 = sig( abs(omega_matrix[1]), accuracy)
+    
+    return matrix, det, omega_matrix, omega1, omega2
+    
+
+def Mode_Shape(K_STAR, M_STAR):
+    
+    matrix = OMEGA_2DOF(K_STAR, M_STAR)[0]
+    omega1 = OMEGA_2DOF(K_STAR, M_STAR)[-2]
+    omega2 = OMEGA_2DOF(K_STAR, M_STAR)[-1]
+    
+    Ki = symbols('X')
+    
+    eqn0 = matrix[0][0] + matrix[0][1]*Ki
+    
+    eqn1 = eqn0.subs(omega, omega1)
+    
+    eqn2 = eqn0.subs(omega, omega2)
+    
+    mode1 = sig(solve(eqn1, Ki)[0], accuracy)
+    mode2 = sig(solve(eqn2, Ki)[0], accuracy)
+    
+    return eqn1, eqn2, mode1, mode2
+
+
+def Forced_Amplitude_2DOF(K_STAR, M_STAR, omegaSub, F0):
+    
+    matrix = K_STAR - omegaSub**2 * M_STAR
+    
+    matrixInv = np.linalg.inv(matrix)
+    
+    X1 = matrixInv[0][1]*F0
+    X2 = matrixInv[1][1]*F0
+    
+    return X1, X2
+    
+
+
 ### END OF FUNCTIONS
 
 
@@ -290,4 +349,104 @@ phi0 = 0
 
 steadyState = Forced_Vibration(M_0, phi0, k_star, omegaN, dampRatio, omegaSub)
 
+
+
+### Q10 of quiz 7 ###
+L = 1.2
+m = 12
+I0 = 5.76
+c = 10
+k = 1010
+g = 9.81
+
+k_star = L*(-m*g*L/2 + k*L)
+c_star = c*L**2
+I_star = I0
+
+theta = 0.01 #vibration amplitude
+omegaSub = 22
+
+omegaN = Omega_N(k_star, I_star)
+dampRatio = Damp_Ratio(c_star, I_star, omegaN)
+
+
+
+
+momentAmp = Force_Amplitude(theta, k_star, dampRatio, omegaN, omegaSub)
+
+forceAmp = 2*momentAmp / L
+
+
+
+
+
+## Q1 of qiz 9 ##
+
+r = 1.2
+I0 = 2.4
+m2 = 2
+c = 1
+k_t = 240
+k = 300
+
+#matrix elements
+K_STAR = np.zeros([2,2])
+M_STAR = np.zeros_like(K_STAR)
+C_STAR = np.zeros_like(K_STAR)
+
+K_STAR[0][0] = k_t + k*r**2
+K_STAR[0][1] = -k*r
+K_STAR[1][0] = -k*r
+K_STAR[1][1] = k
+
+
+C_STAR[0][0] = c*r**2
+
+M_STAR[0][0] = I0
+M_STAR[1][1] = m2
+
+
+## finding natural freq
+
+temp = OMEGA_2DOF(K_STAR, M_STAR)
+
+omega1 = temp[-2]
+omega2 = temp[-1]
+
+
+mode1 = Mode_Shape(K_STAR, M_STAR)[2]
+mode2 = Mode_Shape(K_STAR, M_STAR)[3]
     
+    
+
+
+## Q6 of Quiz 9 ###
+r = 1.1
+I1 = 2.2
+m2 = 2.5
+k = 300
+
+#matrix elements
+K_STAR = np.zeros([2,2])
+M_STAR = np.zeros_like(K_STAR)
+C_STAR = np.zeros_like(K_STAR)
+
+M_STAR[0][0] = I1
+M_STAR[1][1] = m2
+
+K_STAR[0][0] = 2*k*r**2
+K_STAR[0][1] = k*r
+K_STAR[1][0] = k*r
+K_STAR[1][1] = 2*k
+
+temp = OMEGA_2DOF(K_STAR, M_STAR)
+
+
+omegaSub = np.sqrt(2*k*r**2 / I1 )
+F0 = 28
+
+steadyState = Forced_Amplitude_2DOF(K_STAR, M_STAR, omegaSub, F0)
+
+
+
+
